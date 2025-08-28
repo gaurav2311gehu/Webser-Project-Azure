@@ -1,0 +1,42 @@
+trigger:
+- main
+
+pool:
+  name: 'azureagent'
+
+variables:
+  imageRepository: 'webserverproject'
+  containerRegistry: 'gauravcicd.azurecr.io'
+  dockerfilePath: '$(Build.SourcesDirectory)/Dockerfile'
+  tag: '$(Build.BuildId)'
+
+steps:
+  - script: |
+      sudo apt-get update
+      sudo apt-get install -y python3.12-venv
+    displayName: 'Install python3.12-venv'
+  - script: |
+      python3 --version
+    displayName: 'Check Python version'
+
+  - script: |
+      python3 -m venv venv
+      source venv/bin/activate
+      python -m pip install --upgrade pip
+      pip install -r requirements.txt
+    displayName: 'Create venv & Install dependencies'
+    
+  - script: |
+      source venv/bin/activate
+      python -m unittest discover -s tests
+    displayName: 'Run Unit Tests'
+  - task: Docker@2
+    inputs:
+      containerRegistry: 'gauravcicd'
+      repository: 'mywebserver'
+      command: 'buildAndPush'
+      Dockerfile: '**/Dockerfile'
+      tags: '$(Build.BuildId)'
+ 
+
+
